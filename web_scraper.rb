@@ -15,7 +15,31 @@ class WebScraper
   end
 
   def scrape
+    titles = []
+    companies = []
+    locations = []
     @page = @scraper.submit(@search)
+    @divs = @page.search('.complete-serp-result-div')
+
+    @page.search('.complete-serp-result-div').each do |div|
+      companies << div.at('a .compName').text.strip
+    end
+
+    @page.search('.complete-serp-result-div').each do |div|
+      locations << div.at('span .jobLoc').text
+    end
+
+    @page.search('.complete-serp-result-div').each do |div|
+      titles << div.at('h3 a').text.strip
+    end
+    
+   
+    companies
+    
+    locations
+    
+    titles
+    
   end
 
   def display_results
