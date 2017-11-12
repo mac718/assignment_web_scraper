@@ -44,8 +44,16 @@ class WebScraper
     pp scrape
   end
 
+  def save_results
+    CSV.open('results.csv', 'a') do |csv|
+      scrape.each do |job|
+        csv << job.values
+      end
+    end
+  end
+
 end
 
 
 scrape = WebScraper.new
-scrape.display_results
+scrape.save_results
