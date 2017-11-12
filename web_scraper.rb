@@ -14,10 +14,10 @@ class WebScraper
     @search.q = "ruby rails"
     @search.l = "San Francisco, CA"
     @scraper.history_added = Proc.new { sleep 0.5 }
-    @results = []
+    @csv = ResultsSaver.new
   end
 
-  def search
+  def organize_data
     @divs.map do |div|
       {
       company: div.at('a .compName').text.strip,
@@ -30,30 +30,12 @@ class WebScraper
 
   end
 
-  def next_page
-    @page = @scraper.submit(@search)
-
-  end
-
   def scrape
     @page = @scraper.submit(@search)
     @divs = @page.search('.complete-serp-result-div')
-    search
+    @csv.save_results(organize_data)
   end
-  def display_results
-    pp scrape
-  end
-
-  def save_results
-    CSV.open('results.csv', 'a') do |csv|
-      scrape.each do |job|
-        csv << job.values
-      end
-    end
-  end
-
 end
 
 
-scrape = WebScraper.new
-scrape.save_results
+WebScraper.new.scrape
