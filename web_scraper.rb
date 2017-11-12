@@ -3,16 +3,17 @@ require 'mechanize'
 require 'bundler/setup'
 require 'pry'
 require 'csv'
+require_relative 'results_saver'
 
 class WebScraper
 
   def initialize
     @scraper = Mechanize.new { |agent| 
           agent.user_agent_alias = "Linux Firefox"}
-    @page = @scraper.get('https://www.dice.com/')
-    @search = @page.form_with(:action => '/jobs')
-    @search.q = "ruby rails"
-    @search.l = "San Francisco, CA"
+    @page_number = 1
+    @page = @scraper.get("https://www.dice.com/jobs?q=ruby+OR+ralis&l=San+Francisco%2C+CA&startPage=#{@page_number}")
+    @number_of_pages = @page.search('#posiCountId').text.to_i
+    @divs = @page.search('.complete-serp-result-div')
     @scraper.history_added = Proc.new { sleep 0.5 }
     @csv = ResultsSaver.new
   end
@@ -31,9 +32,13 @@ class WebScraper
   end
 
   def scrape
-    @page = @scraper.submit(@search)
-    @divs = @page.search('.complete-serp-result-div')
-    @csv.save_results(organize_data)
+    until @divs.empty?
+      binding.pry
+      @csv.save_results(organize_data)
+      @page_number += 1
+      @page = @scraper.get("https://www.dice.com/jobs?q=ruby+OR+ralis&l=San+Francisco%2C+CA&startPage=#{@page_number}")
+      @divs = @page.search('.complete-serp-result-div')
+    end 
   end
 end
 
