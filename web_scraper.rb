@@ -10,34 +10,34 @@ class WebScraper
   def initialize
     @scraper = Mechanize.new { |agent| 
           agent.user_agent_alias = "Linux Firefox"}
-    @page_number = 1
-    @page = @scraper.get("https://www.dice.com/jobs?q=ruby+OR+ralis&l=San+Francisco%2C+CA&startPage=#{@page_number}")
-    @number_of_pages = @page.search('#posiCountId').text.to_i
-    @divs = @page.search('.complete-serp-result-div')
     @scraper.history_added = Proc.new { sleep 0.5 }
-    @csv = ResultsSaver.new
+    @result_saver = ResultsSaver.new
   end
 
   def organize_data
-    @divs.map do |div|
+    @job_details_divs.map do |div|
       {
       company: div.at('a .compName').text.strip,
       location: div.at('span .jobLoc').text,
       title: div.at('h3 a').attributes['title'].value,
       link: div.at('h3 a').attributes['href'].value,
-      posting_date: div.at('span[@itemprop = datePosted]').text
+      posting_date: div.at('span[@itemprop = datePosted]').text,
+      company_id: div.at('h3 a').attributes['href'].value.split("/")[4],
+      job_id: (/[^?]*/).match(div.at('h3 a').attributes['href'].value.split("/")[5])[0]
       }
     end
 
   end
 
   def scrape
-    until @divs.empty?
-      binding.pry
-      @csv.save_results(organize_data)
+    @page_number = 1
+    @page = @scraper.get("https://www.dice.com/jobs?q=ruby+OR+ralis&l=San+Francisco%2C+CA&startPage=#{@page_number}")
+    @job_details_divs = @page.search('.complete-serp-result-div')
+    until @job_details_divs.empty?
+      @result_saver.save_results(organize_data)
       @page_number += 1
       @page = @scraper.get("https://www.dice.com/jobs?q=ruby+OR+ralis&l=San+Francisco%2C+CA&startPage=#{@page_number}")
-      @divs = @page.search('.complete-serp-result-div')
+      @job_details_divs = @page.search('.complete-serp-result-div')
     end 
   end
 end
